@@ -9,9 +9,40 @@ permissions:
   contents: write
 
 jobs:
+  build:
+    name: Build CMake Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake g++ make
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release -- -j$(nproc)
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp build/assessment artifacts/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts/
+
   create_tag:
     name: Create Tag
     runs-on: ubuntu-latest
+    needs: build
     outputs:
       new_tag: ${{ steps.tag.outputs.new_tag }}
 
@@ -43,37 +74,6 @@ jobs:
           git config user.email "actions@github.com"
           git tag ${{ steps.tag.outputs.new_tag }}
           git push origin ${{ steps.tag.outputs.new_tag }}
-
-  build:
-    name: Build CMake Project
-    runs-on: ubuntu-latest
-    needs: create_tag
-
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y cmake g++ make
-
-      - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build --config Release -- -j$(nproc)
-
-      - name: Prepare artifacts
-        run: |
-          mkdir -p artifacts
-          cp build/assessment artifacts/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts
-          path: artifacts/
 
   release:
     name: Publish Release
