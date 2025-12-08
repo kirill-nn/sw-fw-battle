@@ -1,0 +1,93 @@
+name: Build and Release (CMake, Ubuntu)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  create_tag:
+    name: Create Tag
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: vars
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+      - name: Bump patch version
+        id: tag
+        run: |
+          old="${{ steps.vars.outputs.latest_tag }}"
+          base=${old#v}
+          IFS='.' read -r major minor patch <<< "$base"
+          patch=$((patch+1))
+          new_tag="v${major}.${minor}.${patch}"
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.tag.outputs.new_tag }}
+          git push origin ${{ steps.tag.outputs.new_tag }}
+
+  build:
+    name: Build CMake Project
+    runs-on: ubuntu-latest
+    needs: create_tag
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake g++ make
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release -- -j$(nproc)
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          cp build/assessment artifacts/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: artifacts/
+
+  release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: [create_tag, build]
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.create_tag.outputs.new_tag }}
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
