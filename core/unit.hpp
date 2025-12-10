@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tuple>
+
 namespace sw::core
 {
 	template <typename T, typename... List>

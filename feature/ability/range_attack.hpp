@@ -5,6 +5,7 @@
 #include <property/position.h>
 #include <property/range.h>
 #include <ability/common.hpp>
+#include <optional>
 
 namespace sw::feature
 {

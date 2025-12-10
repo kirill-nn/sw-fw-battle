@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
+#include <variant>
 
 namespace sw::core
 {

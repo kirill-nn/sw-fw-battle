@@ -94,12 +94,12 @@ sw::assessment::simulation::builder& sw::assessment::simulation::builder::with_m
 					core::property<feature::destination>(unit).y = y;
 					core::property<feature::destination>(unit).specified = true;
 					_initial_events.emplace_back(
-						io::march_started{
+						io::march_started(
 							id,
 							core::property<feature::position>(unit).x,
 							core::property<feature::position>(unit).y,
 							x,
-							y});
+							y));
 				}
 			},
 			entry);

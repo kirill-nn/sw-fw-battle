@@ -6,6 +6,7 @@
 #include <property/strength.h>
 #include <ability/common.hpp>
 #include <unit.hpp>
+#include <optional>
 
 namespace sw::feature
 {
