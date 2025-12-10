@@ -34,52 +34,54 @@ namespace sw::core
 			(set_property(std::forward<ProvidedProps>(provided)), ...);
 		}
 
+		template <typename Arena, typename Handler>
+		bool next_action(Arena& arena, Handler& handler)
+		{
+			return ability_lookup(arena, handler);
+		}
+
 	private:
+		template <std::size_t I = 0, typename Arena, typename Handler>
+		bool ability_lookup(Arena& arena, Handler& handler)
+		{
+			if constexpr (I == sizeof...(Abilities))
+			{
+				return false;
+			}
+			else
+			{
+				if (auto& ability = std::get<I>(_abilities); ability(*this, arena, handler))
+				{
+					return true;
+				}
+				return ability_lookup<I + 1>(arena, handler);
+			}
+		}
+
 		template <typename Prop, typename Unit>
 		friend auto& property(Unit& u);
-
-		template <typename Ability, typename Unit, typename... Args>
-		friend auto use_ability(Unit& unit, Args&&... args);
 
 		template <typename P>
 		void set_property(P&& p)
 		{
 			static_assert(has_property<P>, "Property does not exist!");
-			std::get<P>(props) = std::forward<P>(p);
+			std::get<P>(_properties) = std::forward<P>(p);
 		}
 
 		template <typename Property>
 		auto& get()
 		{
 			static_assert(has_property<Property>, "Property not assigned to this unit!");
-			return std::get<Property>(props);
+			return std::get<Property>(_properties);
 		}
 
-		template <typename Ability, typename... Args>
-		decltype(auto) use(Args&&... args)
-		{
-			static_assert(is_one_of<Ability, Abilities...>::value, "Ability not assigned to this unit!");
-			return Ability{}.invoke(*this, std::forward<Args>(args)...);
-		}
-
-		std::tuple<Properties...> props;
+		std::tuple<Properties...> _properties;
+		std::tuple<Abilities...> _abilities;
 	};
 
 	template <typename Prop, typename Unit>
 	auto& property(Unit& u)
 	{
 		return u.template get<Prop>();
-	}
-
-	template <typename Unit, typename Ability>
-	constexpr bool has_ability()
-	{
-		return Unit::template has_ability<Ability>;
-	}
-
-	template <typename Ability, typename Unit, typename... Args>
-	auto use_ability(Unit& unit, Args&&... args)
-	{
-		return unit.template use<Ability>(std::forward<Args>(args)...);
 	}
 }

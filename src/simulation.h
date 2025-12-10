@@ -12,11 +12,6 @@ namespace sw::assessment
 	public:
 		using unit_t = std::variant<feature::swordsman, feature::hunter>;
 
-		struct unit_entry final
-		{
-			unit_t unit;
-		};
-
 		class builder final
 		{
 		public:
@@ -32,9 +27,8 @@ namespace sw::assessment
 			simulation build() const;
 
 		private:
-			core::arena _arena;
-			std::vector<unit_entry> _units;
-			std::vector<io::event> _events;
+			core::arena<unit_t> _arena;
+			std::vector<io::event> _initial_events;
 		};
 
 		static builder create();
@@ -42,15 +36,12 @@ namespace sw::assessment
 		std::vector<io::event> next_tick(size_t& ticker);
 
 	private:
-		simulation(core::arena arena, std::vector<unit_entry> units, std::vector<io::event> events);
+		simulation(core::arena<unit_t> arena, std::vector<io::event> events);
 
 		std::vector<io::event> tick();
 
-		void remove_dead_units();
-
 		size_t _ticker;
-		core::arena _arena;
-		std::vector<unit_entry> _units;
-		std::vector<io::event> _events;
+		core::arena<unit_t> _arena;
+		std::vector<io::event> _initial_events;
 	};
 }

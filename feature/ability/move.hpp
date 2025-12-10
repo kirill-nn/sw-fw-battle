@@ -1,6 +1,7 @@
 #pragma once
 
 #include <property/destination.h>
+#include <property/identity.h>
 #include <property/health.h>
 #include <property/position.h>
 
@@ -8,25 +9,22 @@ namespace sw::feature
 {
 	struct move final
 	{
-		enum class state
+		struct step_event final
 		{
-			movable,
-			edge_reached,
-			destination_reached,
-			immovable
+			uint32_t id, x, y;
 		};
 
-		template <class Unit>
-		state invoke(Unit& unit, core::arena& arena) const
+		struct destination_event final
 		{
-			if (!core::property<destination>(unit).specified)
-			{
-				return state::immovable;
-			}
+			uint32_t id, x, y;
+		};
 
-			if (core::property<health>(unit).hp <= 0)
+		template<typename Unit, typename Arena, typename Handler>
+		bool operator()(Unit& unit, Arena& arena, Handler& handler) const
+		{
+			if (!core::property<destination>(unit).specified || core::property<health>(unit).hp <= 0)
 			{
-				return state::immovable;
+				return false;
 			}
 
 			auto& pos = core::property<position>(unit);
@@ -34,7 +32,7 @@ namespace sw::feature
 
 			if (pos.x == dest.x && pos.y == dest.y)
 			{
-				return state::immovable;
+				return false;
 			}
 
 			int dx = dest.x > pos.x ? +1 : (dest.x < pos.x ? -1 : 0);
@@ -49,11 +47,14 @@ namespace sw::feature
 				pos.y = new_y;
 				if (pos.x == dest.x && pos.y == dest.y)
 				{
-					return state::destination_reached;
+					handler(destination_event{core::property<identity>(unit).id, pos.x, pos.y});
+				} else
+				{
+					handler(step_event{core::property<identity>(unit).id, pos.x, pos.y});
 				}
-				return state::movable;
+				return true;
 			}
-			return state::edge_reached;
+			return false;
 		}
 	};
 }

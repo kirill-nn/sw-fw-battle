@@ -7,10 +7,10 @@
 namespace sw::feature
 {
 	using swordsman = core::unit_base<
-		core::abilities<move, close_attack, mortal>,
+		core::abilities<close_attack, move>,
 		core::properties<identity, position, destination, health, strength>>;
 
 	using hunter = core::unit_base<
-		core::abilities<move, close_attack, range_attack, mortal>,
+		core::abilities<close_attack, range_attack, move>,
 		core::properties<identity, position, destination, health, strength, agility, range>>;
 }

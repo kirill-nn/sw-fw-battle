@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdint>
+#include <vector>
 
 namespace sw::core
 {
+	template<typename Unit>
 	class arena final
 	{
 	public:
@@ -12,22 +13,36 @@ namespace sw::core
 				_width(width)
 		{}
 
+		void append(Unit&& unit)
+		{
+			_units.emplace_back(unit);
+		}
+
 		bool in_bounds(const uint32_t x, const uint32_t y) const
 		{
 			return x < _width && y < _height;
 		}
 
-		uint32_t height() const
+		bool finished() const
 		{
-			return _height;
+			return _units.size() <= 1;
 		}
 
-		uint32_t width() const
+		template<typename EventHandler>
+		void tick(EventHandler&& handler)
 		{
-			return _width;
+			for (auto& entry : _units)
+			{
+				std::visit([&](auto& unit) { unit.next_action(*this, handler); }, entry);
+			}
 		}
 
+		std::vector<Unit>& units()
+		{
+			return _units;
+		}
 	private:
 		uint32_t _height, _width;
+		std::vector<Unit> _units;
 	};
 }
